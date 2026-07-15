@@ -17,6 +17,7 @@ import {
 	toError,
 	truncateHead,
 } from "@earendil-works/pi-agent-core";
+import { createBrowserAgentSession } from "@earendil-works/pi-coding-agent/browser";
 
 // Keep this entry browser-safe. It is bundled by scripts/check-browser-smoke.mjs
 // to catch accidental Node-only runtime imports in browser-facing package exports.
@@ -25,12 +26,18 @@ const schema = Type.Object({ prompt: Type.String() });
 const stream = createAssistantMessageEventStream();
 
 const agent = new Agent({ initialState: { model } });
+const browserSession = await createBrowserAgentSession({ initialState: { model } });
 agent.steer({ role: "user", content: [{ type: "text", text: "queued" }], timestamp: 0 });
 const repo = new InMemorySessionRepo();
 const result = getOrThrow(ok({ value: 1 }));
 const customMessage = createCustomMessage("note", "hello", true, undefined, "2026-01-01T00:00:00.000Z");
 const llmMessages = convertToLlm([customMessage]);
-const skill = { name: "browser-safe", description: "Smoke test", content: "Use browser APIs.", filePath: "/skills/browser-safe/SKILL.md" };
+const skill = {
+	name: "browser-safe",
+	description: "Smoke test",
+	content: "Use browser APIs.",
+	filePath: "/skills/browser-safe/SKILL.md",
+};
 
 console.log(
 	model.id,
@@ -39,6 +46,7 @@ console.log(
 	schema.type,
 	typeof stream.push,
 	agent.hasQueuedMessages(),
+	browserSession.agent.state.model.id,
 	typeof repo.create,
 	result.value,
 	llmMessages.length,
