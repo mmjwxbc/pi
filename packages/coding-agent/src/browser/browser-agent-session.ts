@@ -9,6 +9,7 @@ import {
 	type PromptTemplate,
 	type Skill,
 } from "@earendil-works/pi-agent-core";
+import type { TSchema } from "typebox";
 
 export interface BrowserSessionSnapshot {
 	messages: AgentMessage[];
@@ -25,7 +26,8 @@ export interface BrowserAgentResources {
 	promptTemplates?: PromptTemplate[];
 }
 
-export interface BrowserToolDefinition<TParams = any, TDetails = unknown> extends AgentTool<TParams, TDetails> {
+export interface BrowserToolDefinition<TParameters extends TSchema = TSchema, TDetails = unknown>
+	extends AgentTool<TParameters, TDetails> {
 	promptSnippet?: string;
 	promptGuidelines?: string[];
 }
@@ -69,19 +71,20 @@ export class BrowserAgentSession {
 	private readonly listeners = new Set<(event: AgentEvent) => void | Promise<void>>();
 
 	constructor(options: BrowserAgentSessionOptions, restored?: BrowserSessionSnapshot) {
-		this.store = options.store;
-		this.resources = options.resources ?? {};
-		for (const tool of options.tools ?? []) {
+		const { store, tools, activeToolNames, resources, ...agentOptions } = options;
+		this.store = store;
+		this.resources = resources ?? {};
+		for (const tool of tools ?? []) {
 			if (this.tools.has(tool.name)) throw new Error(`Duplicate tool: ${tool.name}`);
 			this.tools.set(tool.name, tool);
 		}
-		this.activeNames = restored?.activeToolNames ?? options.activeToolNames ?? [...this.tools.keys()];
+		this.activeNames = restored?.activeToolNames ?? activeToolNames ?? [...this.tools.keys()];
 		this.validateToolNames(this.activeNames);
 		this.agent = new Agent({
-			...options,
+			...agentOptions,
 			initialState: {
-				...options.initialState,
-				messages: restored?.messages ?? options.initialState?.messages,
+				...agentOptions.initialState,
+				messages: restored?.messages ?? agentOptions.initialState?.messages,
 				tools: this.resolveActiveTools(),
 			},
 		});
@@ -125,11 +128,11 @@ export class BrowserAgentSession {
 		this.resources = resources;
 	}
 
-	setActiveTools(names: string[]): void {
+	async setActiveTools(names: string[]): Promise<void> {
 		this.validateToolNames(names);
 		this.activeNames = names.slice();
 		this.agent.state.tools = this.resolveActiveTools();
-		void this.persist();
+		await this.persist();
 	}
 
 	abort(): void {
