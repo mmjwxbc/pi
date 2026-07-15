@@ -60,7 +60,7 @@ describe("BrowserAgentSession", () => {
 
 		expect(session.messages[0]?.role).toBe("user");
 		await session.prompt("hello");
-		expect((await store.load()).messages.at(-1)?.role).toBe("assistant");
+		expect((await store.load())?.messages.at(-1)?.role).toBe("assistant");
 	});
 
 	it("owns tool registration and active tool selection", async () => {
@@ -70,7 +70,7 @@ describe("BrowserAgentSession", () => {
 			activeToolNames: [],
 		});
 		expect(session.activeToolNames).toEqual([]);
-		session.setActiveTools(["get_canvas_snapshot"]);
+		await session.setActiveTools(["get_canvas_snapshot"]);
 		expect(session.activeToolNames).toEqual(["get_canvas_snapshot"]);
 		expect(session.agent.state.tools.map((tool) => tool.name)).toEqual(["get_canvas_snapshot"]);
 	});
