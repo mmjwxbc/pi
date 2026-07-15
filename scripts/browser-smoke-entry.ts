@@ -26,7 +26,7 @@ const schema = Type.Object({ prompt: Type.String() });
 const stream = createAssistantMessageEventStream();
 
 const agent = new Agent({ initialState: { model } });
-const browserAgent = createBrowserAgentSession({ initialState: { model } });
+const browserSession = await createBrowserAgentSession({ initialState: { model } });
 agent.steer({ role: "user", content: [{ type: "text", text: "queued" }], timestamp: 0 });
 const repo = new InMemorySessionRepo();
 const result = getOrThrow(ok({ value: 1 }));
@@ -46,7 +46,7 @@ console.log(
 	schema.type,
 	typeof stream.push,
 	agent.hasQueuedMessages(),
-	browserAgent.state.model.id,
+	browserSession.agent.state.model.id,
 	typeof repo.create,
 	result.value,
 	llmMessages.length,
